@@ -1,0 +1,73 @@
+- name: Deploy 3-Tier App with Docker & Ansible
+  hosts: localhost
+  become: yes
+
+  vars_files:
+    - vars/main.yml
+    - vars/secrets.yml
+
+  tasks:
+    - name: install dnf plugins core 
+      dnf:
+        name: dnf-plugins-core
+        state: present
+
+    - name: Add Docker CE repo
+      yum_repository:
+        name: docker-ce
+        description: Docker CE Stable
+        baseurl: https://download.docker.com/linux/centos/7/x86_64/stable
+        gpgcheck: yes
+        gpgkey: https://download.docker.com/linux/centos/gpg
+        enabled: yes
+
+    - name: Install Docker CE
+      yum:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-compose-plugin
+          - docker-buildx-plugin
+        state: present
+
+    - name: Start Docker service
+      systemd:
+        name: docker
+        enabled: yes
+        state: started
+
+
+    - name: login to Docker hub
+      community.docker.docker_login:
+        username: "{{ DOCKER_USERNAME }}"
+        password: "{{ DOCKER_PASSWORD }}"
+
+    - name: Create db_password.txt
+      copy:
+        dest: ./db_password.txt
+        content: "{{ DB_PASSWORD }}"
+
+    - name: Build and push Docker images
+      community.docker.docker_image:
+        name: "{{ item.name }}"
+        tag: "{{ item.tag }}"
+        build:
+          path: "{{ item.path }}"
+        source: build
+        push: yes
+        timeout: 6000
+      loop:
+      - { name: "nadametwaly24/frontend-react", path: "./React-Frontend", tag: "latest" }
+      - { name: "nadametwaly24/backend-dotnet-api", path: "./DotNet-Backend", tag: "latest" }
+
+
+    - name: Deploy using Docker Compose
+      community.docker.docker_compose_v2:
+        project_src: "./"
+        state: present
+
+    - name: Delete secret file after deployment
+      file:
+        path: ./db_password.txt
+        state: absent
