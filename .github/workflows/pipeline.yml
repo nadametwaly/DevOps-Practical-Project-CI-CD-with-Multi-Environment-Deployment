@@ -1,0 +1,85 @@
+name: CI/CD workflow
+on:
+    workflow_dispatch:
+
+jobs:
+    dotnet-ci:
+        uses: nadametwaly24/centralized-automation-repo/.github/workflows/dotnet.yml@main
+        with:
+            dotnet-version: "8.0"
+            project-path: "./DotNet-Backend"
+            build-configuration: "Release"
+            run-tests: true
+        secrets:
+            docker_password: ${{ secrets.DOCKER_PASSWORD }}
+
+    react-ci:
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+            security-events: write
+            actions: read
+        steps:
+          - uses: actions/checkout@v4
+          - uses: actions/setup-node@v6.1.0
+            with:
+                node-version: 20
+          - name: Installing Dependencies
+            run: npm install
+
+          - name: CodeQL Analysis
+            uses: github/codeql-action/init@v3
+            with:
+                languages: javascript
+          - name: Perform CodeQL Analysis
+            uses: github/codeql-action/analyze@v3
+
+          - name: Run Gitleaks for secret detection
+            uses: gitleaks/gitleaks-action@v2
+            continue-on-error: true
+          - name: Upload Gitleaks results to GitHub
+            uses: github/codeql-action/upload-sarif@v3
+            if: always()
+            with:
+             sarif_file: results.sarif
+             category: gitleaks
+
+          - name: Build & Push React Docker Image
+            uses: nadametwaly24/centralized-automation-repo/.github/actions/react-docker-s2i@main
+            with:
+                registry: ghcr.io
+                username: ${{ github.actor }}
+                password: ${{ secrets.GITHUB_TOKEN }}
+                image-name: react-frontend
+                tag: latest
+
+          - name: Run Trivy     #vulnerability scanner
+            uses: aquasecurity/trivy-action@0.33.1
+            with:
+                image-ref: 'ghcr.io/${{ github.actor }}/react-app-cicd:${{ github.sha }}'
+                format: 'sarif'
+                output: 'trivy-results.sarif'
+                severity: 'CRITICAL,HIGH'
+          - name: Upload Trivy scan results to GitHub Security tab
+            uses: github/codeql-action/upload-sarif@v4
+            with:
+                sarif_file: 'trivy-results.sarif'
+
+
+    deploy-react-railway:
+        needs: react-ci
+        runs-on: ubuntu-latest
+        if: ${{ github.event.inputs.environment != 'dev' }}
+        environment:
+            name: ${{ github.event.inputs.environment }}
+        container:
+            image: ghcr.io/railwayapp/cli:latest             # Railway CLI container
+        env:
+            RAILWAY_TOKEN: ${{ secrets.RAILWAY_API_KEY }}    # Railway API token
+            SVC_NAME: react-app-cicd
+        steps:
+          - name: Deploy React App to Railway
+            run: |
+                railway redeploy --service=$SVC_NAME -y                   
+
+
