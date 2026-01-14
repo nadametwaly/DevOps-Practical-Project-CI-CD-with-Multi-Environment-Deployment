@@ -52,17 +52,14 @@ jobs:
             uses: github/codeql-action/analyze@v3
 
           - name: Run Gitleaks for secret detection
-            uses: gitleaks/gitleaks-action@v8
-            with:
-                format: sarif
-                output: results.sarif
+            uses: gitleaks/gitleaks-action@v2
             continue-on-error: true
           - name: Upload Gitleaks results to GitHub
-            uses: github/codeql-action/upload-sarif@v4
+            uses: github/codeql-action/upload-sarif@v3
             if: always()
             with:
-             sarif_file: results.sarif
-             category: gitleaks
+                sarif_file: results.sarif
+                category: gitleaks
 
           - name: Build & Push React Docker Image
             uses: nadametwaly/centralized-automation-repo/.github/actions/react-docker-s2i@main
