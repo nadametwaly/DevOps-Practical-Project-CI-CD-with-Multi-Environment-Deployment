@@ -9,7 +9,7 @@ RUN dotnet restore ./DotNet-Backend/
 # Copy everything else and build
 COPY . .
 WORKDIR /src/DotNet-Backend
-RUN dotnet publish -c Release -o /app/publish --no-restore
+RUN dotnet publish API.csproj -c Release -o /app/publish --no-restore
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
