@@ -26,6 +26,7 @@ jobs:
             project-path: "./DotNet-Backend"
             build-configuration: "Release"
             run-tests: true
+            dockerfile-path: "./DotNet-Backend/Dockerfile"
         secrets:
             docker_password: ${{ secrets.DOCKER_PASSWORD }}
 
