@@ -75,11 +75,59 @@ jobs:
         container:
             image: ghcr.io/railwayapp/cli:latest             # Railway CLI container
         env:
-            RAILWAY_TOKEN: ${{ secrets.RAILWAY_API_KEY }}    # Railway API token
-            SVC_NAME: react-app-cicd
+            RAILWAY_TOKEN: ${{ secrets.API_TOKEN }}    # Railway API token
+            SVC_NAME: react-app
         steps:
           - name: Deploy React App to Railway
             run: |
-                railway redeploy --service=$SVC_NAME -y                   
+                railway redeploy --service=$SVC_NAME -y     
+
+    deploy-dotnet-railway:
+        needs: dotnet-ci
+        runs-on: ubuntu-latest
+        if: ${{ github.event.inputs.environment != 'dev' }}
+        environment:
+            name: ${{ github.event.inputs.environment }}   # staging | production
+
+        container:
+            image: ghcr.io/railwayapp/cli:latest
+
+        env:
+            RAILWAY_TOKEN: ${{ secrets.API_TOKEN }}
+            SERVICE_NAME: dotnet-backend
+        steps:
+          - uses: actions/checkout@v4
+
+          - name: Set Railway Variables
+            run: |
+                railway variables set \
+                ASPNETCORE_ENVIRONMENT=${{ github.event.inputs.environment }} \
+                ConnectionStrings__Default=${{ secrets.DB_CONNECTION_STRING }}
+
+          - name: Deploy .NET Backend
+            run: |
+                railway redeploy --service=$SERVICE_NAME -y
+
+    deploy-dev:
+        needs: [dotnet-ci, react-ci]
+        if: ${{ github.event.inputs.environment == 'dev' }}
+        runs-on: [self-hosted, linux]
+        environment:
+            name: dev
+        steps:
+          - uses: actions/checkout@v4
+
+          - name: Deploy full stack with Ansible
+            run: |
+                ansible-playbook deploy.yml \
+                -e "environment=dev" \
+                -e "github_actor=${{ github.actor }}" \
+                -e "github_token=${{ secrets.GITHUB_TOKEN }}" \
+                -e "docker_username=${{ secrets.DOCKER_USERNAME }}" \
+                -e "docker_password=${{ secrets.DOCKER_PASSWORD }}" \
+                -e "db_password=${{ secrets.DB_PASSWORD }}"
+
+
+        
 
 
