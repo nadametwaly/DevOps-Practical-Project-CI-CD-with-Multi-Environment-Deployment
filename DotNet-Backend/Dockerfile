@@ -1,15 +1,12 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# Copy solution and project files
-COPY *.sln* ./
-COPY DotNet-Backend/*.csproj ./DotNet-Backend/
-RUN dotnet restore ./DotNet-Backend/
-
-# Copy everything else and build
+# Copy everything
 COPY . .
+
+# Restore, build and publish from the project directory
 WORKDIR /src/DotNet-Backend
-RUN dotnet publish API.csproj -c Release -o /app/publish --no-restore
+RUN dotnet publish API.csproj -c Release -o /app/publish
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
