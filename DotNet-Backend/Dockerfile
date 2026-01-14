@@ -1,12 +1,18 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
-COPY .*.sin *.csproj ./
-RUN dotnet restore
+
+# Copy solution and project files
+COPY *.sln* ./
+COPY DotNet-Backend/*.csproj ./DotNet-Backend/
+RUN dotnet restore ./DotNet-Backend/
+
+# Copy everything else and build
 COPY . .
+WORKDIR /src/DotNet-Backend
 RUN dotnet publish -c Release -o /app/publish --no-restore
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
 COPY --from=build /app/publish .
 EXPOSE 8080
-ENTRYPOINT [ "dotnet", "API.dll" ]
+ENTRYPOINT ["dotnet", "API.dll"]
