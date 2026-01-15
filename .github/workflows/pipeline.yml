@@ -103,8 +103,11 @@ jobs:
                 sarif_file: 'trivy-results.sarif'
 
 
+
+
+                
     
-    # ========== FIXED: Deploy React to Railway ==========
+   # ========== FIXED: Deploy React to Railway ==========
     deploy-react-railway:
         needs: react-ci
         runs-on: ubuntu-latest
@@ -123,7 +126,7 @@ jobs:
             env:
                 RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
             run: |
-                railway link ${{ secrets.RAILWAY_PROJECT_ID }}
+                railway link --project ${{ secrets.RAILWAY_PROJECT_ID }}
                 railway service ${{ secrets.RAILWAY_REACT_SERVICE_ID }}
                 railway up --detach
 
@@ -152,7 +155,7 @@ jobs:
                 DB_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
             run: |
                 # Link to project
-                railway link ${{ secrets.RAILWAY_PROJECT_ID }}
+                railway link --project ${{ secrets.RAILWAY_PROJECT_ID }}
                 
                 # Select service
                 railway service ${{ secrets.RAILWAY_DOTNET_SERVICE_ID }}
@@ -173,9 +176,13 @@ jobs:
             env:
                 RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
             run: |
-                railway link ${{ secrets.RAILWAY_PROJECT_ID }}
+                railway link --project ${{ secrets.RAILWAY_PROJECT_ID }}
                 railway service ${{ secrets.RAILWAY_DOTNET_SERVICE_ID }}
                 railway up --detach
+
+
+
+
     deploy-dev:
         needs: [dotnet-ci, react-ci]
         if: ${{ github.event.inputs.environment == 'dev' }}
