@@ -126,13 +126,9 @@ jobs:
                 npm install -g @railway/cli
         
           - name: Authenticate Railway CLI
-            run: |
-                if [ -z "${{ secrets.RAILWAY_TOKEN }}" ]; then
-                echo "RAILWAY_TOKEN is not set"
-                exit 1
-                fi
-                railway login --token ${{ secrets.RAILWAY_TOKEN }}
-
+            env:
+                RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+            run: railway whoami
         
           - name: Set Environment Variables
             env:
@@ -181,12 +177,9 @@ jobs:
                 npm install -g @railway/cli
         
           - name: Authenticate Railway CLI
-            run: |
-                if [ -z "${{ secrets.RAILWAY_TOKEN }}" ]; then
-                echo "RAILWAY_TOKEN is not set"
-                exit 1
-                fi
-                railway login --token ${{ secrets.RAILWAY_TOKEN }}
+            env:
+                RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+            run: railway whoami
         
           - name: Set Environment Variables
             env:
