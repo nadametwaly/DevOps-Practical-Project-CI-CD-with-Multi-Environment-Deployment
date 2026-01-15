@@ -104,52 +104,105 @@ jobs:
 
 
     
+    # ========== FIXED: Deploy React to Railway ==========
     deploy-react-railway:
         needs: react-ci
         runs-on: ubuntu-latest
         if: ${{ github.event.inputs.environment != 'dev' }}
         environment:
             name: ${{ github.event.inputs.environment }}
-        container:
-            image: ghcr.io/railwayapp/cli:latest
-        env:
-            RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-            RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}  # REQUIRED!
         steps:
-          - name: Deploy React App to Railway
-            run: |
-                railway redeploy --service=${{ secrets.RAILWAY_REACT_SERVICE_ID }} -y
+          - name: Checkout Repository
+            uses: actions/checkout@v4
 
+          - name: Install Railway CLI
+            run: |
+                npm install -g @railway/cli
+
+          - name: Deploy React App to Railway
+            env:
+                RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+            run: |
+                railway link ${{ secrets.RAILWAY_PROJECT_ID }}
+                railway service ${{ secrets.RAILWAY_REACT_SERVICE_ID }}
+                railway up --detach
+
+    # ========== FIXED: Deploy .NET to Railway ==========
     deploy-dotnet-railway:
         needs: dotnet-ci
         runs-on: ubuntu-latest
         if: ${{ github.event.inputs.environment != 'dev' }}
         environment:
             name: ${{ github.event.inputs.environment }}
-        container:
-            image: ghcr.io/railwayapp/cli:latest
-        env:
-            RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-            RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}  # REQUIRED!
         steps:
-          - uses: actions/checkout@v4
+          - name: Checkout Repository
+            uses: actions/checkout@v4
+
+          - name: Install Railway CLI
+            run: |
+                npm install -g @railway/cli
 
           - name: Set Railway Variables
             env:
+                RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
                 DB_HOST: ${{ vars.DB_HOST }}
                 DB_PORT: ${{ vars.DB_PORT }}
                 DB_NAME: ${{ vars.DB_NAME }}
                 DB_USER: ${{ vars.DB_USER }}
                 DB_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
             run: |
+                # Link to project
+                railway link ${{ secrets.RAILWAY_PROJECT_ID }}
+                
+                # Select service
+                railway service ${{ secrets.RAILWAY_DOTNET_SERVICE_ID }}
+                
                 # Build connection string from components
                 CONNECTION_STRING="Server=${DB_HOST};Port=${DB_PORT};Database=${DB_NAME};User=${DB_USER};Password=${DB_PASSWORD};"
                 
-                # Set Railway environment variables
-                railway variables set \
-                ASPNETCORE_ENVIRONMENT=${{ github.event.inputs.environment }} \
-                ConnectionStrings__Default="${CONNECTION_STRING}"
+                # Set environment variables
+                railway variables set ASPNETCORE_ENVIRONMENT=${{ github.event.inputs.environment }}
+                railway variables set ConnectionStrings__Default="${CONNECTION_STRING}"
+                railway variables set DB_HOST="${DB_HOST}"
+                railway variables set DB_PORT="${DB_PORT}"
+                railway variables set DB_NAME="${DB_NAME}"
+                railway variables set DB_USER="${DB_USER}"
+                railway variables set DB_PASSWORD="${DB_PASSWORD}"
 
           - name: Deploy .NET Backend
+            env:
+                RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
             run: |
-                railway redeploy --service=${{ secrets.RAILWAY_DOTNET_SERVICE_ID }} -y
+                railway link ${{ secrets.RAILWAY_PROJECT_ID }}
+                railway service ${{ secrets.RAILWAY_DOTNET_SERVICE_ID }}
+                railway up --detach
+    deploy-dev:
+        needs: [dotnet-ci, react-ci]
+        if: ${{ github.event.inputs.environment == 'dev' }}
+        runs-on: [self-hosted, linux]
+        environment:
+            name: dev
+        steps:
+          - uses: actions/checkout@v4
+
+          - name: Deploy full stack with Ansible
+            env:
+                DB_HOST: ${{ vars.DB_HOST }}
+                DB_PORT: ${{ vars.DB_PORT }}
+                DB_NAME: ${{ vars.DB_NAME }}
+                DB_USER: ${{ vars.DB_USER }}
+                DB_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
+                API_URL: ${{ vars.API_URL }}
+            run: |
+                ansible-playbook deploy.yml \
+                -e "environment=dev" \
+                -e "github_actor=${{ github.actor }}" \
+                -e "github_token=${{ secrets.GITHUB_TOKEN }}" \
+                -e "docker_username=${{ secrets.DOCKER_USERNAME }}" \
+                -e "docker_password=${{ secrets.DOCKER_PASSWORD }}" \
+                -e "db_host=${DB_HOST}" \
+                -e "db_port=${DB_PORT}" \
+                -e "db_name=${DB_NAME}" \
+                -e "db_user=${DB_USER}" \
+                -e "db_password=${DB_PASSWORD}" \
+                -e "api_url=${API_URL}"
