@@ -125,7 +125,6 @@ jobs:
             run: |
                 npm install -g @railway/cli
         
-          
           - name: Set Environment Variables
             env:
                 RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
@@ -136,13 +135,16 @@ jobs:
                     DB_NAME=${{ vars.DB_NAME }} \
                     DB_USER=${{ vars.DB_USER }} \
                     MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }} \
-                    --service ${{ secrets.RAILWAY_REACT_SERVICE_ID }}
+                    --service ${{ secrets.RAILWAY_REACT_SERVICE_ID }} \
+                    --environment ${{ github.event.inputs.environment }}
         
           - name: Deploy React Service to Railway
             env:
                 RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
             run: |
-                railway up --service ${{ secrets.RAILWAY_REACT_SERVICE_ID }} --detach
+                railway up --service ${{ secrets.RAILWAY_REACT_SERVICE_ID }} \
+                    --environment ${{ github.event.inputs.environment }} \
+                    --detach
         
           - name: Deployment Summary
             run: |
@@ -182,13 +184,16 @@ jobs:
                     DB_NAME=${{ vars.DB_NAME }} \
                     DB_USER=${{ vars.DB_USER }} \
                     MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }} \
-                    --service ${{ secrets.RAILWAY_DOTNET_SERVICE_ID }}
+                    --service ${{ secrets.RAILWAY_DOTNET_SERVICE_ID }} \
+                    --environment ${{ github.event.inputs.environment }}
             
           - name: Deploy .NET Service to Railway
             env:
                 RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
             run: |
-                railway up --service ${{ secrets.RAILWAY_DOTNET_SERVICE_ID }} --detach
+                railway up --service ${{ secrets.RAILWAY_DOTNET_SERVICE_ID }} \
+                    --environment ${{ github.event.inputs.environment }} \
+                    --detach
         
           - name: Deployment Summary
             run: |
@@ -199,7 +204,6 @@ jobs:
                 echo "**Service ID:** ${{ secrets.RAILWAY_DOTNET_SERVICE_ID }}" >> $GITHUB_STEP_SUMMARY
                 echo "" >> $GITHUB_STEP_SUMMARY
                 echo "✅ .NET backend deployed successfully!" >> $GITHUB_STEP_SUMMARY
-
 
 
 
