@@ -82,12 +82,13 @@ jobs:
                 username: nadametwaly24
                 password: ${{ secrets.DOCKER_PASSWORD }}
           - name: Build & Push React Docker Image to Docker Hub
-            uses: docker/build-push-action@v5
+            uses: nadametwaly/centralized-automation-repo/.github/actions/react-docker-s2i@main
             with:
-                context: ./React-Frontend
-                file: ./React-Frontend/Dockerfile
-                push: true
-                tags: nadametwaly24/react-frontend:latest
+                registry: docker.io  # or just remove this line if docker.io is default
+                username: nadametwaly24
+                password: ${{ secrets.DOCKER_PASSWORD }}
+                image-name: nadametwaly24/react-frontend
+                tag: latest
 
           - name: Run Trivy     #vulnerability scanner
             uses: aquasecurity/trivy-action@0.33.1
