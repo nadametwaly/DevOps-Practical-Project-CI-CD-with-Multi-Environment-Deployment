@@ -128,6 +128,7 @@ jobs:
           - name: Set Railway Variables
             env:
                 RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+                RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
             run: |
                 railway variables set \
                 DB_HOST=${{ vars.DB_HOST }} \
@@ -141,6 +142,7 @@ jobs:
           - name: Deploy React
             env:
                 RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+                RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
             run: |
                 railway up \
                 --service ${{ secrets.RAILWAY_REACT_SERVICE_ID }} \
