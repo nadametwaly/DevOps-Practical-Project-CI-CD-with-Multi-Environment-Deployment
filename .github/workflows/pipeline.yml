@@ -258,11 +258,14 @@ jobs:
             env:
                 ANSIBLE_HOST_KEY_CHECKING: 'False'
                 ANSIBLE_FORCE_COLOR: 'True'
+                ANSIBLE_BECOME_METHOD: 'sudo'
             run: |
                 ansible-playbook playbook.yml \
                     -e "DOCKER_USERNAME=nadametwaly24" \
                     -e "DOCKER_PASSWORD=${{ secrets.DOCKER_PASSWORD }}" \
                     -e "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" \
+                    --become \
+                    --connection=local \
                     -v
         
       
