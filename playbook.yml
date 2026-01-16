@@ -1,13 +1,11 @@
+
 - name: Deploy 3-Tier App with Docker & Ansible
   hosts: localhost
   become: yes
-
   vars_files:
     - vars/main.yml
-    #- vars/secrets.yml
-
   tasks:
-    - name: install dnf plugins core 
+    - name: Install dnf plugins core 
       dnf:
         name: dnf-plugins-core
         state: present
@@ -37,8 +35,22 @@
         enabled: yes
         state: started
 
+    - name: Configure Docker DNS (fix network timeout issues)
+      copy:
+        dest: /etc/docker/daemon.json
+        content: |
+          {
+            "dns": ["8.8.8.8", "8.8.4.4", "1.1.1.1"]
+          }
+        owner: root
+        group: root
+        mode: '0644'
+      notify: restart docker
 
-    - name: login to Docker hub
+    - name: Ensure handlers run if needed
+      meta: flush_handlers
+
+    - name: Login to Docker Hub
       community.docker.docker_login:
         username: "{{ DOCKER_USERNAME }}"
         password: "{{ DOCKER_PASSWORD }}"
@@ -48,26 +60,49 @@
         dest: ./db_password.txt
         content: "{{ DB_PASSWORD }}"
 
-    - name: Build and push Docker images
+    - name: Pull pre-built Docker images from Docker Hub
       community.docker.docker_image:
         name: "{{ item.name }}"
         tag: "{{ item.tag }}"
-        build:
-          path: "{{ item.path }}"
-        source: build
-        push: yes
-        timeout: 6000
+        source: pull
+        state: present
       loop:
-      - { name: "nadametwaly24/frontend-react", path: "./React-Frontend", tag: "latest" }
-      - { name: "nadametwaly24/backend-dotnet-api", path: "./DotNet-Backend", tag: "latest" }
+        - { name: "nadametwaly24/frontend-react", tag: "latest" }
+        - { name: "nadametwaly24/backend-dotnet-api", tag: "latest" }
+      retries: 3
+      delay: 10
+      register: pull_result
 
+    - name: Display pulled images
+      debug:
+        msg: "Successfully pulled {{ item.item.name }}:{{ item.item.tag }}"
+      loop: "{{ pull_result.results }}"
+      when: item.changed
 
     - name: Deploy using Docker Compose
       community.docker.docker_compose_v2:
         project_src: "./"
         state: present
 
+    - name: Wait for services to be healthy
+      pause:
+        seconds: 30
+
+    - name: Verify running containers
+      command: docker ps
+      register: docker_ps_output
+
+    - name: Display running containers
+      debug:
+        var: docker_ps_output.stdout_lines
+
     - name: Delete secret file after deployment
       file:
         path: ./db_password.txt
         state: absent
+
+  handlers:
+    - name: restart docker
+      systemd:
+        name: docker
+        state: restarted
