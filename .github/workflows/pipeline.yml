@@ -115,6 +115,8 @@ jobs:
         needs: react-ci
         if: github.event.inputs.environment != 'dev'
         environment: ${{ github.event.inputs.environment }}
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         steps:
           - name: Checkout Repository
             uses: actions/checkout@v4
@@ -147,6 +149,8 @@ jobs:
         needs: dotnet-ci
         if: github.event.inputs.environment != 'dev'
         environment: ${{ github.event.inputs.environment }}
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         
         steps:
           - name: Checkout Repository
