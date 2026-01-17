@@ -139,10 +139,7 @@ jobs:
           - name: Deploy react Service to Railway
             env:
                 RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-            run: |
-                railway up --service ${{ secrets.RAILWAY_REACT_SERVICE_ID }} \
-                    --environment ${{ github.event.inputs.environment }} \
-                    --detach
+            run: railway up --service React-Frontend
         
           - name: Deployment Summary
             run: |
