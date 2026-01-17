@@ -17,6 +17,7 @@ permissions:
 jobs:
     dotnet-ci:
         permissions:
+            packages: write
             contents: read
             actions: read
             security-events: write
@@ -49,6 +50,8 @@ jobs:
           - name: Build React Application
             run: npm run build
             working-directory: React-Frontend
+            env:
+                VITE_API_BASE_URL: http://localhost:8080/api
 
           - name: CodeQL Analysis
             uses: github/codeql-action/init@v3
@@ -115,6 +118,8 @@ jobs:
         needs: react-ci
         if: github.event.inputs.environment != 'dev'
         environment: ${{ github.event.inputs.environment }}
+        env:
+            RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         steps:
           - name: Checkout Repository
             uses: actions/checkout@v4
@@ -133,14 +138,14 @@ jobs:
                     DB_NAME=${{ vars.DB_NAME }} \
                     DB_USER=${{ vars.DB_USER }} \
                     MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }} \
-                    --service ${{ secrets.RAILWAY_DOTNET_SERVICE_ID }} \
+                    --service ${{ secrets.RAILWAY_REACT_SERVICE_ID }} \           
                     --environment ${{ github.event.inputs.environment }}
             
           - name: Deploy react Service to Railway
             env:
                 RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
             run: |
-                railway up --service ${{ secrets.RAILWAY_DOTNET_SERVICE_ID }} \
+                railway up --service ${{ secrets.RAILWAY_REACT_SERVICE_ID }} \
                     --environment ${{ github.event.inputs.environment }} \
                     --detach
         
