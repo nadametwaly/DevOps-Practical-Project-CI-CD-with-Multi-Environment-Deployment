@@ -132,22 +132,30 @@ jobs:
             env:
                 RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
             run: |
-                railway variables --service  React-Frontend \
-                    --set NODE_ENV=production \
-                    --set VITE_API_BASE_URL=https://${{ vars.RAILWAY_DOTNET_URL }}/api
+                railway variables set NODE_ENV=production \
+                    --service React-Frontend \
+                    --environment ${{ github.event.inputs.environment }}
+                railway variables set VITE_API_BASE_URL=https://${{ vars.RAILWAY_DOTNET_URL }}/api \
+                    --service React-Frontend \
+                    --environment ${{ github.event.inputs.environment }}
             
-          - name: Deploy react Service to Railway
-            run: railway up --service React-Frontend
+          - name: Deploy React Service to Railway
+            env:
+                RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+            working-directory: React-Frontend
+            run: |
+                railway up --service React-Frontend \
+                    --environment ${{ github.event.inputs.environment }} \
+                    --detach
         
           - name: Deployment Summary
             run: |
-                echo "## 🚀 react Deployment Complete" >> $GITHUB_STEP_SUMMARY
+                echo "## 🚀 React Deployment Complete" >> $GITHUB_STEP_SUMMARY
                 echo "" >> $GITHUB_STEP_SUMMARY
                 echo "**Environment:** ${{ github.event.inputs.environment }}" >> $GITHUB_STEP_SUMMARY
-                echo "**Service URL:** ${{ vars.RAILWAY_DOTNET_URL }}" >> $GITHUB_STEP_SUMMARY
-                echo "**Service ID:** ${{ secrets.RAILWAY_DOTNET_SERVICE_ID }}" >> $GITHUB_STEP_SUMMARY
+                echo "**Service URL:** ${{ vars.RAILWAY_REACT_URL }}" >> $GITHUB_STEP_SUMMARY
                 echo "" >> $GITHUB_STEP_SUMMARY
-                echo "✅ react frontend deployed successfully!" >> $GITHUB_STEP_SUMMARY
+                echo "✅ React frontend deployed successfully!" >> $GITHUB_STEP_SUMMARY
 
 
 
