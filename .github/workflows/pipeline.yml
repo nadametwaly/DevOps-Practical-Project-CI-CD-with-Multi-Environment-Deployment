@@ -162,7 +162,7 @@ jobs:
         
           - name: Set Backend environment variables
             run: |
-                railway variables --service DotNet-Backend \
+                railway variables --service backend \
                     --set ASPNETCORE_ENVIRONMENT=Production \
                     --set DB_HOST=${{ vars.DB_HOST }} \
                     --set DB_PORT=${{ vars.DB_PORT }} \
@@ -171,7 +171,7 @@ jobs:
                     --set DB_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }}
 
           - name: Deploy Backend Service
-            run: railway redeploy --service=DotNet-Backend -y
+            run: railway redeploy --service=backend -y
             
           - name: Deployment Summary
             run: |
